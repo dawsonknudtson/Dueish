@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon, IconName } from '../../components/Icon';
 import { colors as c, fontFamily } from '../../constants/theme';
-import { loadSetup, saveSetup } from '../../db/onboarding';
-import { containsItem, initialSetup, normalizeItem, Setup } from './model';
-import { configureReminder } from './reminders';
+import { saveSetup } from '../../db/onboarding';
+import { containsItem, initialSetup, ONBOARDING_VERSION, normalizeItem, Setup } from './model';
 import { ForgetStep, ReminderStep, TrackStep } from './Steps';
 
 const pages: { label: string; title: string; subtitle: string; icon: IconName }[] = [
@@ -14,17 +13,15 @@ const pages: { label: string; title: string; subtitle: string; icon: IconName }[
   { label: 'FIND YOUR OWN RHYTHM', title: 'How often would you like Dueish to remind you?', subtitle: 'A gentle nudge, when you need it.\nChoose a rhythm that feels right.', icon: 'bell' },
 ];
 
-export default function OnboardingScreen() {
-  const [setup, setSetup] = useState<Setup>(initialSetup);
+export default function OnboardingScreen({ savedSetup, onComplete }: { savedSetup: Setup | null; onComplete: (setup: Setup) => void }) {
+  const [setup, setSetup] = useState<Setup>(() => savedSetup ? { ...savedSetup, completed: false } : initialSetup);
   const [step, setStep] = useState(0);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opacity = useRef(new Animated.Value(1)).current;
   const scroll = useRef<ScrollView>(null);
 
-  useEffect(() => { loadSetup().then(saved => { if (saved) { setSetup(saved); if (saved.completed) setStep(2); } }).catch(() => setError('Your saved choices couldn’t be loaded. Please try reopening Dueish.')).finally(() => setLoading(false)); }, []);
 
   const change = (patch: Partial<Setup>) => { setError(''); setSetup(current => ({ ...current, ...patch, completed: false })); };
   const go = (next: number) => { Keyboard.dismiss(); setError(''); setStep(next); scroll.current?.scrollTo({ y: 0, animated: false }); opacity.setValue(0); Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }).start(); };
@@ -46,22 +43,20 @@ export default function OnboardingScreen() {
     try {
       if (step < 2) { await saveSetup(next); go(step + 1); }
       else {
-        // Persist choices before opening the system permission dialog.
-        await saveSetup(next);
-        const notificationStatus = await configureReminder(next.frequency);
-        const completed = { ...next, completed: true, notificationStatus };
-        await saveSetup(completed); setSetup(completed); Keyboard.dismiss();
+        const completed = { ...next, completed: true, completionVersion: ONBOARDING_VERSION };
+        await saveSetup(completed);
+        Keyboard.dismiss();
+        onComplete(completed);
       }
-    } catch { setError(step === 2 ? 'We couldn’t finish saving your setup. Please try again, or choose no notifications.' : 'We couldn’t save your choices. Please try again.'); }
+    } catch { setError('We couldn’t save your choices. Please try again.'); }
     finally { setBusy(false); }
   };
   const disabled = busy || (step === 0 && !setup.items.length && !input.trim()) || (step === 1 && !setup.selected.length);
   const page = pages[step];
-  const savedMessage = setup.notificationStatus === 'enabled' ? 'Your choices are saved and gentle reminders are on.' : setup.notificationStatus === 'denied' ? 'Your choices are saved. Notifications are off; you can allow them in your device settings.' : setup.notificationStatus === 'unavailable' ? 'Your choices are saved. Reminders are available in the iOS app.' : 'Your choices are saved. No notifications, as requested.';
 
   return <SafeAreaView style={s.safe} edges={['top', 'bottom']}><KeyboardAvoidingView style={s.keyboard} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><View style={s.container}>
     <View style={s.header}><View style={s.brand}><View style={s.brandMark}><Icon name="check" size={19} color={c.blueDark} /></View><Text style={s.brandText}>dueish<Text style={{ color: '#71ACD9' }}>.</Text></Text></View><Text style={s.headerNote}>A little less to remember.</Text></View>
-    {loading ? <View style={s.loading}><ActivityIndicator color={c.blueDark} accessibilityLabel="Loading your choices" /></View> : <>
+    <>
       <View style={s.progressRow}><Pressable accessibilityRole="button" accessibilityLabel="Previous step" disabled={step === 0 || busy} onPress={() => go(step - 1)} style={[s.back, step === 0 && { opacity: 0 }]}><Icon name="back" size={21} /></Pressable><View style={s.progress} accessibilityLabel={`Step ${step + 1} of 3`}>{pages.map((_, i) => <View key={i} style={[s.progressSegment, i <= step && { backgroundColor: '#9AC9F0' }]} />)}</View><Text style={s.stepCount}>0{step + 1}<Text style={{ color: '#A0ACB7' }}> / 03</Text></Text></View>
       <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}><Animated.View style={{ opacity }}>
         <View style={s.heroIcon}><Icon name={page.icon} size={31} color={c.blueDark} /><View style={s.spark} /></View>
@@ -72,11 +67,10 @@ export default function OnboardingScreen() {
       </Animated.View></ScrollView>
       <View style={s.footer}>
         {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
-        {setup.completed && step === 2 && <View style={s.success} accessibilityLiveRegion="polite"><Icon name="check" size={19} color={c.blueDark} /><Text style={s.successText}>{savedMessage}</Text></View>}
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || (setup.completed && step === 2) }} disabled={disabled || (setup.completed && step === 2)} onPress={advance} style={({ pressed }) => [s.cta, disabled && { opacity: 0.45 }, pressed && { backgroundColor: '#9BCBF1' }]}>{busy ? <ActivityIndicator color={c.ink} /> : <><Text style={s.ctaText}>{setup.completed && step === 2 ? 'You’re all set' : step === 2 ? 'Make a little room' : 'Continue'}</Text><Icon name={setup.completed && step === 2 ? 'check' : 'arrow'} size={20} /></>}</Pressable>
-        <Text style={s.footerNote}>{step === 0 ? 'A lighter mind starts with a little list.' : step === 1 ? 'Your list. Your pace.' : setup.completed ? 'You can adjust your choices above anytime.' : 'You’re in control. Change this anytime.'}</Text>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled }} disabled={disabled} onPress={advance} style={({ pressed }) => [s.cta, disabled && { opacity: 0.45 }, pressed && { backgroundColor: '#9BCBF1' }]}>{busy ? <ActivityIndicator color={c.ink} /> : <><Text style={s.ctaText}>{'Continue'}</Text><Icon name={'arrow'} size={20} /></>}</Pressable>
+        <Text style={s.footerNote}>{step === 0 ? 'A lighter mind starts with a little list.' : step === 1 ? 'Your list. Your pace.' : 'You’re in control. Change this anytime.'}</Text>
       </View>
-    </>}
+    </>
   </View></KeyboardAvoidingView></SafeAreaView>;
 }
 
