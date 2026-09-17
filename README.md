@@ -23,18 +23,6 @@ Choices are saved on Continue and completion using SQLite key-value storage on n
 
 After purchasing or restoring Dueish Pro, a reminder frequency requests notification permission and schedules one recurring local check-in. Denied permission still saves onboarding, with a clear status. Choosing no notifications cancels the onboarding check-in. The browser preview saves the preference but does not schedule notifications. These are general check-ins, not per-tracker due-date notifications.
 
-## Validation
-
-```sh
-npm run typecheck
-npx expo install --check
-npx expo export --platform web --platform ios
-```
-
-Before shipping, verify on an iPhone: keyboard and small-screen scrolling, larger accessibility text, VoiceOver, back navigation, reopening after completion, and notification permission granted/denied. Confirm delivery with the app in the background using a temporary short interval in a development build.
-
-Expo references: [SDK 57](https://docs.expo.dev/versions/v57.0.0/), [SQLite](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/), [notifications](https://docs.expo.dev/versions/v57.0.0/sdk/notifications/).
-
 ## Purchases
 
 The paywall offers Monthly ($2.99), Yearly ($19.99), and Lifetime ($39.99), using localized store prices when configured. See [REVENUECAT.md](REVENUECAT.md) for the public SDK key, required store products and entitlement, and development-build instructions. Real purchases require a native build (`npm run ios:build`); Expo Go and web are previews only. Run `npm test` for the purchase-gate tests.
