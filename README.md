@@ -19,21 +19,9 @@ Use `npm run ios` to build, install, and launch the development app in the iOS s
 
 White and light blue styling, native SF Pro on iOS, vector icons without emojis, keyboard-aware layout, scrollable content, accessible selection controls, and back navigation.
 
-Choices are saved on Continue and completion using SQLite key-value storage on native devices and localStorage in the web preview. Completion opens a hard paywall; reopening checks RevenueCat access before showing the paid setup confirmation. The tracker home screen is intentionally outside this build.
+Choices are saved on Continue and completion using SQLite key-value storage on native devices and localStorage in the web preview. Completion opens a hard paywall; reopening checks RevenueCat access before showing the main reminder screen. After a real or simulated purchase, the app opens the main reminder screen directly.
 
 After purchasing or restoring Dueish Pro, a reminder frequency requests notification permission and schedules one recurring local check-in. Denied permission still saves onboarding, with a clear status. Choosing no notifications cancels the onboarding check-in. The browser preview saves the preference but does not schedule notifications. These are general check-ins, not per-tracker due-date notifications.
-
-## Validation
-
-```sh
-npm run typecheck
-npx expo install --check
-npx expo export --platform web --platform ios
-```
-
-Before shipping, verify on an iPhone: keyboard and small-screen scrolling, larger accessibility text, VoiceOver, back navigation, reopening after completion, and notification permission granted/denied. Confirm delivery with the app in the background using a temporary short interval in a development build.
-
-Expo references: [SDK 57](https://docs.expo.dev/versions/v57.0.0/), [SQLite](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/), [notifications](https://docs.expo.dev/versions/v57.0.0/sdk/notifications/).
 
 ## Purchases
 
@@ -51,3 +39,11 @@ npm run ios
 ```
 
 Keep `Podfile.lock`; dependency upgrades and deleting the native project are not required for this path repair.
+
+## Main reminder screen
+
+Purchases and restores open the same home screen in both native and simulation modes. The selected onboarding items are imported once and persisted locally. New items start with a weekly interval and a first due date seven calendar days from creation; no previous completion is assumed. Notification frequency remains a separate general check-in preference.
+
+Home groups reminders into **Due now** (including overdue items) and **Coming up**. Tap a row to rename it, edit the repeat interval or next due date, view recent completions, or mark it done. Marking done saves completion history and advances the next due date from today. The plus button adds another reminder. Due dates here are in-app schedules; notifications remain the existing general check-ins, not individual due-date alerts.
+
+The simulation label and **Test another plan** action remain available on home for development. Simulated and real modes use the same local reminder data, but simulation does not request or send notifications.

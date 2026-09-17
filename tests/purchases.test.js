@@ -26,7 +26,7 @@ jest.mock('react-native-purchases', () => ({ __esModule: true, default: {
 jest.mock('../src/db/onboarding', () => ({ loadSetup: jest.fn() }));
 jest.mock('../src/features/onboarding/OnboardingScreen', () => ({ __esModule: true, default: props => { mockComplete = props.onComplete; return 'onboarding'; } }));
 jest.mock('../src/features/purchases/PaywallScreen', () => ({ __esModule: true, default: () => 'paywall' }));
-jest.mock('../src/features/purchases/ReadyScreen', () => ({ __esModule: true, default: () => 'ready' }));
+jest.mock('../src/features/trackers/HomeScreen', () => ({ __esModule: true, default: () => 'home' }));
 function Probe() { mockState = usePurchases(); return <EntryScreen />; }
 let tree;
 async function mount() { await act(async () => { tree = create(<PurchasesProvider><Probe /></PurchasesProvider>); }); }
@@ -42,14 +42,14 @@ beforeEach(() => {
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
 test('saved onboarding cannot bypass the paywall on relaunch', async () => { await mount(); expect(tree.toJSON()).toBe('paywall'); expect(mockState.isPro).toBe(false); });
 test('finishing onboarding immediately presents the paywall', async () => { loadSetup.mockResolvedValue(null); await mount(); expect(tree.toJSON()).toBe('onboarding'); await act(async () => mockComplete(completedSetup)); expect(tree.toJSON()).toBe('paywall'); });
-test.each(['monthly', 'annual', 'lifetime'])('purchases the selected %s package and unlocks with entitlement', async id => { await mount(); await act(async () => mockState.purchase(id)); expect(Purchases.purchasePackage).toHaveBeenCalledWith(offering.current[id]); expect(tree.toJSON()).toBe('ready'); });
+test.each(['monthly', 'annual', 'lifetime'])('purchases the selected %s package and unlocks with entitlement', async id => { await mount(); await act(async () => mockState.purchase(id)); expect(Purchases.purchasePackage).toHaveBeenCalledWith(offering.current[id]); expect(tree.toJSON()).toBe('home'); });
 test('canceling purchase stays locked without an error', async () => { Purchases.purchasePackage.mockRejectedValue({ userCancelled: true }); await mount(); await act(async () => mockState.purchase('annual')); expect(tree.toJSON()).toBe('paywall'); expect(mockState.error).toBe(''); });
 test('a transaction without the entitlement does not unlock', async () => { Purchases.purchasePackage.mockResolvedValue({ customerInfo: inactive }); await mount(); await act(async () => mockState.purchase('annual')); expect(tree.toJSON()).toBe('paywall'); expect(mockState.error).toContain('confirmed'); });
-test('restoring an active purchase unlocks, then revoked entitlement locks again', async () => { await mount(); await act(async () => mockState.restore()); expect(tree.toJSON()).toBe('ready'); await act(async () => mockCustomerListener(inactive)); expect(tree.toJSON()).toBe('paywall'); });
+test('restoring an active purchase unlocks, then revoked entitlement locks again', async () => { await mount(); await act(async () => mockState.restore()); expect(tree.toJSON()).toBe('home'); await act(async () => mockCustomerListener(inactive)); expect(tree.toJSON()).toBe('paywall'); });
 test('restore without a purchase stays locked', async () => { Purchases.restorePurchases.mockResolvedValue(inactive); await mount(); await act(async () => mockState.restore()); expect(tree.toJSON()).toBe('paywall'); expect(mockState.error).toContain('No active'); });
 test('missing API key never configures or unlocks', async () => { delete process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY; await mount(); expect(Purchases.configure).not.toHaveBeenCalled(); expect(tree.toJSON()).toBe('paywall'); });
 test('missing products cannot initiate a purchase', async () => { Purchases.getOfferings.mockResolvedValue({ current: null }); await mount(); await act(async () => mockState.purchase('annual')); expect(Purchases.purchasePackage).not.toHaveBeenCalled(); expect(tree.toJSON()).toBe('paywall'); });
-test('offering failure does not remove an existing paid entitlement', async () => { Purchases.getCustomerInfo.mockResolvedValue(active); Purchases.getOfferings.mockRejectedValue(new Error('offline')); await mount(); expect(tree.toJSON()).toBe('ready'); });
+test('offering failure does not remove an existing paid entitlement', async () => { Purchases.getCustomerInfo.mockResolvedValue(active); Purchases.getOfferings.mockRejectedValue(new Error('offline')); await mount(); expect(tree.toJSON()).toBe('home'); });
 
 test('a new install starts onboarding even with an existing paid entitlement', async () => {
   loadSetup.mockResolvedValue(null);
@@ -74,7 +74,7 @@ test('a native development client can purchase even with a storeClient environme
   expect(Purchases.configure).toHaveBeenCalled();
   expect(mockState.packages.annual).toEqual(offering.current.annual);
   await act(async () => mockState.purchase('annual'));
-  expect(tree.toJSON()).toBe('ready');
+  expect(tree.toJSON()).toBe('home');
 });
 test('missing native purchases stays locked and explains how to open the correct build', async () => {
   delete NativeModules.RNPurchases;
@@ -104,6 +104,7 @@ test.each(['monthly', 'annual', 'lifetime'])('simulates %s without Apple, Revenu
   expect(tree.root.findByType(SimulationSheet).props.planId).toBe(id);
   await act(async () => tree.root.findByType(SimulationSheet).props.onConfirm());
   expect(mockState.isPro).toBe(true);
+  expect(tree.toJSON()).toBe('home');
   expect(Purchases.configure).not.toHaveBeenCalled();
   expect(Purchases.purchasePackage).not.toHaveBeenCalled();
   await act(async () => mockState.resetSimulation());

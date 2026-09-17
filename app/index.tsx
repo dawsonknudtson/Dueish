@@ -5,7 +5,7 @@ import OnboardingScreen from '../src/features/onboarding/OnboardingScreen';
 import { hasCompletedOnboarding, Setup } from '../src/features/onboarding/model';
 import PaywallScreen from '../src/features/purchases/PaywallScreen';
 import { usePurchases } from '../src/features/purchases/PurchasesProvider';
-import ReadyScreen from '../src/features/purchases/ReadyScreen';
+import HomeScreen from '../src/features/trackers/HomeScreen';
 import { colors, fontFamily } from '../src/constants/theme';
 
 export default function EntryScreen() {
@@ -25,5 +25,5 @@ export default function EntryScreen() {
   if (!onboardingComplete || !setup) return <OnboardingScreen savedSetup={setup} onComplete={setSetup} />;
   // No local paid flag: only RevenueCat's entitlement grants access.
   if (!purchases.isPro) return <PaywallScreen />;
-  return <ReadyScreen setup={setup} />;
+  return <HomeScreen setup={setup} />;
 }

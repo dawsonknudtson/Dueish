@@ -2,7 +2,7 @@
 
 The custom hard paywall uses `react-native-purchases`. Saving the last onboarding answer immediately shows the paywall. There is no dismiss or skip action. A purchase or restore must return an active `dueish_pro` entitlement to unlock. Existing customers are checked at launch and whenever the app becomes active. No local boolean grants paid access.
 
-The current post-purchase destination is a setup confirmation; the tracker home screen has not been built yet. Reminder permission and scheduling happen after access is granted.
+The post-purchase destination is the main reminder screen, populated from onboarding selections. Reminder permission and scheduling happen after access is granted.
 
 ## One-time store setup
 
@@ -46,7 +46,7 @@ Or use the profiles in `eas.json` to build with EAS. A real development build or
 
 Validate with Apple's sandbox/TestFlight and your configured RevenueCat app:
 
-- Buy each package; verify the correct store product and price, entitlement, and confirmation.
+- Buy each package; verify the correct store product and price, entitlement, and main reminder screen.
 - Cancel the purchase sheet; stay on the paywall without an error.
 - Restore a prior purchase after reinstall; verify access. Restore with no purchase must stay locked.
 - Relaunch with active, expired, and revoked purchases. Verify entitlement updates lock expired/revoked customers.
@@ -67,6 +67,6 @@ For UI testing without Apple setup, RevenueCat products, or native purchases, pu
 EXPO_PUBLIC_SIMULATE_PURCHASES=true
 ```
 
-This works only with `__DEV__` enabled. The paywall shows a development simulation label and opens a clearly labeled local confirmation dialog. Confirm grants session-only preview access; Cancel stays on the paywall. The confirmation screen offers **Test another plan** to reset access. No SDK calls, charges, purchase records, or notification scheduling occur in simulation. Reloading resets simulated access, while onboarding answers remain saved.
+This works only with `__DEV__` enabled. The paywall shows a development simulation label and opens a clearly labeled local confirmation dialog. Confirm grants session-only preview access; Cancel stays on the paywall. The main reminder screen offers **Test another plan** to reset access. No SDK calls, charges, purchase records, or notification scheduling occur in simulation. Reloading resets simulated access, while onboarding answers remain saved.
 
 Set the flag to `false` and restart Metro to test real purchases again. Release builds ignore the flag. This simulation tests the app flow, not StoreKit, RevenueCat products, receipts, or real restore behavior. The missing-native-module error is independent of Apple account setup; native integration still needs separate verification before shipping.
