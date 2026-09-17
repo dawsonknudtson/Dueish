@@ -7,7 +7,7 @@ import { plans, PlanId } from './config';
 import { usePurchases } from './PurchasesProvider';
 
 export default function PaywallScreen() {
-  const { packages, loading, busy, error, purchase, restore, refresh } = usePurchases();
+  const { simulated, packages, loading, busy, error, purchase, restore, refresh } = usePurchases();
   const [selected, setSelected] = useState<PlanId>('annual');
   const [privacy, setPrivacy] = useState(false);
   const [linkError, setLinkError] = useState('');
@@ -21,6 +21,7 @@ export default function PaywallScreen() {
   return <SafeAreaView style={s.safe}><View style={s.container}>
     <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
       <View style={s.brand}><Text style={s.wordmark}>dueish<Text style={{ color: '#71ACD9' }}>.</Text></Text><Text style={s.pro}>PRO</Text></View>
+      {simulated && <Text style={[s.disclosure, { marginTop: 0, marginBottom: 18, color: c.blueDark }]}>DEVELOPMENT SIMULATION · No charges</Text>}
       <View style={s.hero}><Icon name="clock" size={35} color={c.blueDark} /></View>
       <Text style={s.eyebrow}>A LITTLE LESS ON YOUR MIND</Text>
       <Text accessibilityRole="header" style={s.title}>Make room for{ '\n' }everything else.</Text>

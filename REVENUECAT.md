@@ -58,3 +58,15 @@ Validate with Apple's sandbox/TestFlight and your configured RevenueCat app:
 Before App Store submission, publish your final privacy policy and configure its URL in App Store Connect. The paywall includes an in-app privacy summary and Apple's standard EULA link. Review both against the final product, data practices, and your chosen license terms.
 
 Sources: [RevenueCat Expo integration](https://www.revenuecat.com/docs/getting-started/installation/expo), [products and offerings](https://www.revenuecat.com/docs/getting-started/displaying-products), [restoring purchases](https://www.revenuecat.com/docs/getting-started/restoring-purchases).
+
+## Local purchase simulation
+
+For UI testing without Apple setup, RevenueCat products, or native purchases, put this in `.env.local` and restart Metro:
+
+```dotenv
+EXPO_PUBLIC_SIMULATE_PURCHASES=true
+```
+
+This works only with `__DEV__` enabled. The paywall shows a development simulation label and opens a clearly labeled local confirmation dialog. Confirm grants session-only preview access; Cancel stays on the paywall. The confirmation screen offers **Test another plan** to reset access. No SDK calls, charges, purchase records, or notification scheduling occur in simulation. Reloading resets simulated access, while onboarding answers remain saved.
+
+Set the flag to `false` and restart Metro to test real purchases again. Release builds ignore the flag. This simulation tests the app flow, not StoreKit, RevenueCat products, receipts, or real restore behavior. The missing-native-module error is independent of Apple account setup; native integration still needs separate verification before shipping.

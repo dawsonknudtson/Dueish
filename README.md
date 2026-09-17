@@ -40,3 +40,14 @@ Expo references: [SDK 57](https://docs.expo.dev/versions/v57.0.0/), [SQLite](htt
 The paywall offers Monthly ($2.99), Yearly ($19.99), and Lifetime ($39.99), using localized store prices when configured. See [REVENUECAT.md](REVENUECAT.md) for the public SDK key, required store products and entitlement, and development-build instructions. Real purchases require a native build (`npm run ios:build`); Expo Go and web are previews only. Run `npm test` for the purchase-gate tests.
 
 First launch always begins at onboarding question one, even if RevenueCat finds an existing purchase. Returning users reach the paywall only after completing the current onboarding flow with valid answers. Completion flags from earlier builds are treated as drafts: answers are preserved and onboarding begins at question one.
+
+### iOS build after moving the project
+
+CocoaPods generates absolute paths for React Native's `React-VFS.yaml` overlay. If a build reports the overlay missing at an old project location, regenerate those paths from the current project directory:
+
+```sh
+(cd ios && pod install)
+npm run ios
+```
+
+Keep `Podfile.lock`; dependency upgrades and deleting the native project are not required for this path repair.
